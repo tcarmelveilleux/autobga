@@ -1,0 +1,171 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title>AutoBGA Help</title>
+    </head>
+    <body>
+        <h1>AutoBGA Help</h1>
+
+		<h2>Introduction</h2>
+		<p>Generating footprints with AutoBGA is easy. All you need
+		is to do is extract an image of the ball pattern from the datasheet's
+		package drawing. AutoBGA will then generate the ball coordinates
+		using image processing and output a list of the balls present
+		in the grid.</p>
+
+		<p>This short help file will guide you through the process. Furthermore,
+		the default settings when you start AutoBGA are for an example using
+		a picture that comes with the program. You can simply press the
+		<b>"Compute"</b> button to see it in action.</p>
+
+		<h2>How to use AutoBGA</h2>
+		<p>Using AutoBGA is a straight-forward process. <a href="#figure1">Figure 1</a> shows the section
+		of a datasheet with a BGA package drawing.</p>
+		
+		<a name="figure1"></a>
+		<table border="2">
+	        <tr>
+	        <td><div align="center"><b>Figure 1: Three steps to configuring AutoBGA</b></div></td>
+	        </tr>
+	        <tr>
+	        <td><img src="sample_pdf_steps.png"></td>
+	        </tr>
+		</table>
+		
+		<h3>Configuring AutoBGA</h3>
+		<p>Two views are usually presented:
+		<ol>
+			<li>A view of the package from the top, indicating location of pin A1.</li>
+			<li>A view of the package form the bottom, showing the emplacement of connection balls.</li>
+		</ol></p>
+		
+		<p>From these two views, all the information required to configure an AutoBGA session
+		is available.</p>
+		
+		<p>The are 3 configuration steps to execute:
+		<ol>
+			<li>Locate the the <b>package dimensions</b> (width, height) and the <b>number
+			of balls</b> (width, height). In the example, the package width and height
+			are available in a table on the same page(not shown), and the number of ball
+			is 44 horizontally (width) and vertically (height).</li>
+			<li>Enter the <b>location of pin A1</b> from the top view. Here, it would be
+			"NW" for "North West".</li>
+			<li>Extract the <b>region displaying the balls</b>. Most times it will be
+			shown on the bottom view, but sometimes they will appear through
+			transparency on the top view instead. The next section discusses image
+			extraction in more details.</li>
+		</ol></p>
+		
+		<h3>Extracting the ball grid image for processing</h3>
+		<p>To extract the region displaying the balls, you can use the "snapshot" or
+		"picture" tool available in most PDF viewers. Figures <a href="#figure2">2</a> and <a href="#figure3">3</a> show what these
+		tools look like in two popular PDF readers. These tools copy the image to the
+		clipboard. You can then paste the image in any image processing program such
+		as "Paint" or "IrfanView" to save it. It must be saved as a "PNG" or "BMP"
+		image, in either grayscale or RGB (24 or 32 bits).</p>
+		
+		<p>Important characteristics of the image:
+		<ul>
+			<li>The image must not have white space around it. It must contain
+			only the ball grid. See the red square region in <a href="#figure1">Figure 1</a> for an
+			example of correct cropping.</li>
+			<li>The resolution of the image must be sufficient. You must be able
+			to easily make-out each ball. This is usually not a problem.</li>
+			<li>The image must not have colors. It must be "black-and-white"
+			to your perception. Background must be white and details must be
+			black. This is the case of the vast majority of datasheets. It is
+			okay if there are things like alignment lines or squares. 
+			These will be ignored.</li>
+		</ul>  </p>
+		 
+		<p><a name="figure2"></a><table border="2" cellpadding="2">
+	        <tr>
+	        <td><div align="center"><b>Figure 2: Snapshot Tool in Adobe Reader</b></div></td>
+	        </tr>
+	        <tr>
+	        <td><div align="center"><img src="adobe_reader_snapshot_tool.png"></div></td>
+	        </tr>
+		</table></p>
+		
+		<p><a name="figure3"></a><table border="2" cellpadding="2">
+	        <tr>
+	        <td><div align="center"><b>Figure 3: Snapshot Tool in Foxit PDF Reader</b></div></td>
+	        </tr>
+	        <tr>
+	        <td><div align="center"><img src="foxit_picture_tool.png"></div></td>
+	        </tr>
+		</table></p>
+
+		<p>Once the image is saved as PNG or BMP, the filename can be entered in the
+		<b>"Input Image Filename"</b> field. A preview will be shown after the grid is
+		computed using the <b>"Compute"</b> button.</p>
+		
+	    <h3>Interpreting the result report</h3>
+		<p>After the ball grid is computed, a result report will be shown and the data
+		will be copied to the clipboard. The report contains the following 3 sections:
+		<ol>
+			<li><b>Input image preview</b>: A preview of what AutoBGA loaded.</li>
+			
+			<li><b>Pads detected overlay</b>: An image showing a red dot in every cell where
+			a ball was detected in the input image. A grid of blue lines is also present
+			to show which cells were used to detect the balls.</li>
+			
+			<li><b>Table representation of output footprint</b>: A table that shows the final
+			ball grid that was output. This takes in account mirroring ("Picture view")
+			and pin A1 location. Cells with balls have a cyan background. Empty cells
+			have a white background. Pin A1 is marked by a red background.</li>
+		</ol></p>
+		
+		<h2>Output formats</h2>
+		Three output formats are currently supported. Two of these formats (TSV and XML)
+		are flexible enough to allow re-processing to generate CAD data for the majority
+		of CAD tools.
+		
+		<h3>TSV Format</h3>
+		<p>The TSV format lists all pads detected (occupied cells). The heading in the
+		file specifies the column contents. Pads are not output in any specific order.
+		Sorting can be accomplished using a spreadsheet program.
+		</p>
+		
+		<p><a name="table1"></a><table border="2" cellpadding="2">
+	        <tr>
+	        <td><div align="center"><b>Table 1: Example of TSV output format</b></div></td>
+	        </tr>
+	        <tr>
+	        <td><div align="center">
+				<table border="1" cellspacing="1" cellpadding="1">
+				    <tr><td>Pad name</td><td>X position (mm)</td><td>Y position (mm)</td><td>Pad diameter (mm)</td></tr>
+				    <tr><td>AE25</td><td>-7.800</td><td>7.800</td><td>0.300</td></tr>
+				    <tr><td>AE24</td><td>-7.150</td><td>7.800</td><td>0.300</td></tr>
+				    <tr><td>AE23</td><td>-6.500</td><td>7.800</td><td>0.300</td></tr>
+				    <tr><td>AE22</td><td>-5.850</td><td>7.800</td><td>0.300</td></tr>
+				</table>
+	        </div></td>
+	        </tr>
+		</table></p>
+
+		<a name="xml-format"></a>
+		<h3>XML Format</h3>
+
+		<p>The XML format lists all pads detected (occupied cells) using
+		an XML representation from the JFootprintTool program. The XML
+		schema is available in the home directory of the program.
+		</p>
+		
+		<a name="eagle-format"></a>
+		<h3>EAGLE SCR Format</h3>
+		<p>The EAGLE SCR format contains EAGLE commands to draw all the pads
+		detected in the EAGLE library editor. Simply create a new "package" in
+		the library editor and then run the script with the "SCR" EAGLE command. 
+		The script must be pasted in a text editor and saved before being used. 
+		</p>
+
+		<a name="problems"></a>
+		<h2>Reporting problems:</h2>
+		Report all problems to Tennessee Carmel-Veilleux by e-mail.
+		My address is: tcv -at- ro.boto.ca (replace -at- with "@").
+		You can also post a bug report at <a href="http://code.google.com/p/autobga/">http://code.google.com/p/autobga/</a>.
+    </body> 	
+</html>
