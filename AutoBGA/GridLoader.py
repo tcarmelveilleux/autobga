@@ -52,6 +52,7 @@ import os
 from numpy import array,zeros,dtype,sum,reshape,histogram,max
 from numpy import nonzero,logical_and,arange,round,mean,asarray
 import math
+import warnings
 
 class GridLoader:
     def __init__(self, nx, ny, filename):
@@ -246,12 +247,16 @@ class GridLoader:
                     gc.ellipse((xmin2, ymin2, xmax2, ymax2), outline = "red", fill = "red")
         del gc
         
-        # Save the bins image in a temporary file
-        filename = os.tempnam("autobga","tmpoutimg") + ".png"
-        try:
-            newImage.save(filename)
-        except IOError:
-            return None    
+        # Disable pesky warnings about os.tempnam()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+
+            # Save the bins image in a temporary file
+            filename = os.tempnam("autobga","tmpoutimg") + ".png"
+            try:
+                newImage.save(filename)
+            except IOError:
+                return None    
         
         return filename
         

@@ -49,18 +49,10 @@ import GridLoader
 import BgaPadNameGenerator
 import wx
 import wx.html as html
-import warnings
 
 from autobga_wdr import *
 
 VERSION = "1.0"
-
-# Disable pesky warnings about os.tempnam()
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-
-print sys.argv[0]
-print os.path.dirname(os.path.normpath(os.getcwd() + "/" + sys.argv[0]))
 
 # WDR: classes
 
@@ -75,13 +67,13 @@ class AboutDialog(wx.Dialog):
         
         self.getHtmlAbout().SetPage("""<html><body>
         <div align="center">
-        <h3>AutoBGA version %s ($Rev$)</h3>
+        <h3><img src="%s" align="right">AutoBGA v%s ($Rev$)</h3>
         <p>&copy; Copyright 2010 Tennessee Carmel-Veilleux</p>
         <p>For any bug reports or suggestions, contact me at:
         tcv(at)ro.boto.ca
         or visit <a href="http://code.google.com/p/autobga/">http://code.google.com/p/autobga/</a></p>
         </div>
-        </body></html>""" % (VERSION))
+        </body></html>""" % (wx.FileSystem.FileNameToURL(parent.progDir + "/doc/autobga_logo.png"), VERSION))
         
         # WDR: handler declarations for AboutDialog
 
@@ -100,21 +92,16 @@ class MainPanel(wx.Panel):
         wx.Panel.__init__(self, parent, id, pos, size, style)
                 
         self.initLocalData()
-        
-        #self.html_window = html.HtmlWindow(self, ID_HTML_REPORT, wx.DefaultPosition,
-        #                                wx.Size(512,384), html.HW_SCROLLBAR_AUTO)
-
-        #self.help_window = html.HtmlWindow(self, ID_HTML_HELP, wx.DefaultPosition,
-        #                                wx.Size(512,384), html.HW_SCROLLBAR_AUTO)
-        #self.help_window.SetPage("<html><body><H3>Help :)</H3></body></html>");
-        
+                
         MainDialog(self, True)
         
         self.getHtmlReport().SetPage("<html><body><H3>No results yet !</H3></body></html>")
-        progDir = os.path.dirname(os.path.normpath(os.getcwd() + "/" + sys.argv[0]))
-        self.getHtmlHelp().LoadPage(wx.FileSystem.FileNameToURL(progDir + "/doc/index.html"))
         
-        self.getTextCtrlFilename().SetValue(os.path.relpath(os.path.normpath(progDir + "/example_bga.png")))
+        self.progDir = parent.progDir
+        self.getHtmlHelp().LoadPage(wx.FileSystem.FileNameToURL(self.progDir + "/doc/index.html"))
+        
+        self.getTextCtrlFilename().SetValue(os.path.normpath(self.progDir + "/example_bga.png"))
+        # self.displayInfo("argv0: %s\nprogDir: %s\nexample:%s\nhelp:%s" % (sys.argv[0], self.progDir, os.path.normpath(self.progDir + "/example_bga.png"), wx.FileSystem.FileNameToURL(self.progDir + "/doc/index.html")))
         
         self.getChoiceFormat().SetStringSelection("EAGLE SCR")
         self.getChoicePictureView().SetStringSelection("Bottom")
@@ -505,6 +492,9 @@ class MainFrame(wx.Frame):
         pos = wx.DefaultPosition, size = wx.DefaultSize,
         style = wx.DEFAULT_FRAME_STYLE ):
         wx.Frame.__init__(self, parent, id, title, pos, size, style)
+
+        # Find-out where we are, to generate filenames
+        self.progDir = os.path.normpath(os.path.dirname(sys.argv[0]))
         
         self.CreateMyMenuBar()
         
