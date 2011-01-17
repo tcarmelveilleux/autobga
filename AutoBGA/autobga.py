@@ -52,7 +52,7 @@ import wx.html as html
 
 from autobga_wdr import *
 
-VERSION = "1.0"
+VERSION = "1.1"
 
 def getProgDir():
     # Find-out where we are, to generate filenames
