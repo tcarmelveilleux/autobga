@@ -49,8 +49,8 @@ import Image
 import ImageChops
 import ImageDraw
 import os
-from numpy import array,zeros,dtype,sum,reshape,histogram,max
-from numpy import nonzero,logical_and,arange,round,mean,asarray
+from numpy import array,zeros,dtype,sum,reshape,histogram,max,nonzero
+from numpy import nonzero,logical_and,arange,round,mean,asarray, isnan
 import math
 import warnings
 
@@ -158,11 +158,11 @@ class GridLoader:
                 
                 # Eliminate center alignment crosses that could be in
                 # empty bin
-                if xSpread >= 0.8 and ySpread >= 0.8:
-                    binData = self.eliminateCross(binData)
-                    
-                    # Recalculate values
-                    xSpread, ySpread, contents = self.analyzeBin(binData)
+                #if xSpread >= 0.8 or ySpread >= 0.8:
+                binData = self.eliminateCross(binData)
+                
+                # Recalculate values
+                xSpread, ySpread, contents = self.analyzeBin(binData)
 
                 # Eliminate bins containing only either horizontal or 
                 # vertical line segments
@@ -174,7 +174,12 @@ class GridLoader:
                 self.xSpread[yIdx, xIdx] = xSpread
                 self.ySpread[yIdx, xIdx] = ySpread
 
-    def getThreshold(self, contents):
+    def getThresholdOtsu(self, contents):
+        """
+        Optimal thresholding using Otsu's method.
+        Algorithm described in Gonzalez and Woods, "Digital Image Processing, 3rd ed",
+        Prentice Hall, p742-746.
+        """
         N, M = contents.shape	
         flatContents = reshape(contents, (1,(N * M)))
         n = N * M
@@ -214,14 +219,77 @@ class GridLoader:
 
         k_star = round(mean(maxidx-1))/n;
         return k_star
+    
+    def getThresholdGonz(self, contents):
+        """
+        Basic Global Thresholding.
+        
+        Algorithm described in Gonzalez and Woods, Digital Image Processing, 2nd ed,
+        Prentice Hall, p599-600.
+        """
+        N, M = contents.shape
+        #print contents
+        delta = 1000000.0
+        nTrials = 0
+        previous = 1000000.0
+
+        # Step 1: Select an initial estimate for threshold
+        threshold = 0.5
+        
+        flatContents = reshape(contents, (1,(N * M)))
+        
+        while delta > 0.01 and nTrials < 100:
+            # Step 2: Segment image yusng threshold in two groups G1 and G2
+            G1 = flatContents[nonzero(flatContents > threshold)]
+            G2 = flatContents[nonzero(flatContents <= threshold)]
+            
+            # Step 3: Compute average levels mu1 and mu2
+            mu1 = mean(G1)
+            mu2 = mean(G2)
+            
+            if isnan(mu1): mu1 = 0.0
+            if isnan(mu2): mu2 = 0.0
+            
+            # Step 4: Compute new threshold
+            newThreshold = 0.5 * (mu1 + mu2)
+            
+            # Determine new loop conditions for continued iteration of estimation
+            nTrials += 1
+            delta = abs(newThreshold - threshold)
+            #print nTrials, mu1, mu2, threshold, newThreshold, delta
+            threshold = newThreshold
+            
+        return newThreshold
 
     def extractArrayFromBins(self):
-
-        #binAvg = average(flatContents)
-        threshold = self.getThreshold(self.contents)
+        """
+        Convert the pixel-counting bins to a BGA array by thresholding
+        the bins to figure-out which ones have balls and which don't.
+        
+        A heuristic (described below) is used to select one of two
+        thresholding method. A boolean numpy array is returned, with
+        True values being the positions occupied by balls.
+        """
+        sx, sy = self.image.size
+        nBinsX, nBinsY = self.contents.shape
+        
+        # For images with less than 10 pixels of width or height per bin,
+        # we use Otsu's method. It usually leads to better results in that
+        # case. For more pixels, we use global thresholding, as described by
+        # Gonzalez and Woods (see getThresholdGonz method for ref).
+        if ((float(sx) / nBinsX) <= 10) or ((float(sy) / nBinsY) <= 10):
+            threshold = self.getThresholdOtsu(self.contents)
+        else:
+            threshold = self.getThresholdGonz(self.contents)
+        
+        # Binarize bins array according to threshold
         self.bgaArray = self.contents >= threshold
         
     def drawBins(self):
+        """
+        Draw an image containing the bins and detected ball positions, for
+        user verification.
+        """
         # Get a new drawing context
         newImage = self.image.copy()
         newImage = ImageChops.invert(newImage).convert("RGB")

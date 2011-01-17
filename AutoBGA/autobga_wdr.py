@@ -16,157 +16,36 @@ import wx.html as html
 
 # Window functions
 
-ID_TEXT = 10000
-ID_TEXTCTRL_FILENAME = 10001
-ID_BUTTON_BROWSE = 10002
-ID_TEXTCTRL_BALLWIDTH = 10003
-ID_TEXTCTRL_BALLHEIGHT = 10004
-ID_TEXTCTRL_PITCH = 10005
-ID_TEXTCTRL_PACKWIDTH = 10006
-ID_TEXTCTRL_PACKHEIGHT = 10007
-ID_TEXTCTRL_PADDIAMETER = 10008
-ID_CHOICE_PIN_A1 = 10009
-ID_CHOICE_PICTURE_VIEW = 10010
-ID_CHOICE_FORMAT = 10011
-ID_NOTEBOOK = 10012
-ID_BUTTON_COMPUTE = 10013
+ID_NOTEBOOK = 10000
+ID_BUTTON_COMPUTE = 10001
 
 def MainDialog( parent, call_fit = True, set_sizer = True ):
     item0 = wx.BoxSizer( wx.VERTICAL )
     
-    item2 = wx.StaticBox( parent, -1, u"Parameters" )
-    item1 = wx.StaticBoxSizer( item2, wx.VERTICAL )
+    item2 = wx.Notebook( parent, ID_NOTEBOOK, wx.DefaultPosition, [600,384], 0 )
+    item1 = item2
     
-    item3 = wx.BoxSizer( wx.HORIZONTAL )
+    item3 = wx.Panel( item2, -1, pos = wx.DefaultPosition, size = wx.DefaultSize, style = wx.TAB_TRAVERSAL | wx.SUNKEN_BORDER )
+    ParametersDialogFunc(item3, False)
+    item2.AddPage( item3, u"Parameters" )
+
+    item4 = wx.Panel( item2, -1, pos = wx.DefaultPosition, size = wx.DefaultSize, style = wx.TAB_TRAVERSAL | wx.SUNKEN_BORDER )
+    ResultDialogFunc(item4, False)
+    item2.AddPage( item4, u"Results" )
+
+    item5 = wx.Panel( item2, -1, pos = wx.DefaultPosition, size = wx.DefaultSize,  style = wx.TAB_TRAVERSAL | wx.SUNKEN_BORDER)
+    HelpDialogFunc(item5, False)
+    item2.AddPage( item5, u"Help" )
+
+    item0.Add( item1, 1, wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
+
+    item6 = wx.BoxSizer( wx.HORIZONTAL )
     
-    item4 = wx.StaticText( parent, ID_TEXT, u"Input Image Filename:", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item3.Add( item4, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+    item7 = wx.Button( parent, ID_BUTTON_COMPUTE, u"&Compute", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item7.SetDefault()
+    item6.Add( item7, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
 
-    item5 = wx.TextCtrl( parent, ID_TEXTCTRL_FILENAME, u"example_bga.png", wx.DefaultPosition, [380,-1], 0 )
-    item3.Add( item5, 1, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item6 = wx.Button( parent, ID_BUTTON_BROWSE, u"&Browse...", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item3.Add( item6, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item1.Add( item3, 1, wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
-
-    item7 = wx.FlexGridSizer( 0, 11, 0, 0 )
-    
-    item8 = wx.StaticText( parent, ID_TEXT, u"Width (NX):", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item7.Add( item8, 0, wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
-
-    item9 = wx.TextCtrl( parent, ID_TEXTCTRL_BALLWIDTH, u"25", wx.DefaultPosition, [40,-1], 0 )
-    item7.Add( item9, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item10 = wx.StaticText( parent, ID_TEXT, u"balls", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item7.Add( item10, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
-
-    item7.Add( [ 20, 20 ] , 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item11 = wx.StaticText( parent, ID_TEXT, u"Height (NY):", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item7.Add( item11, 0, wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
-
-    item12 = wx.TextCtrl( parent, ID_TEXTCTRL_BALLHEIGHT, u"25", wx.DefaultPosition, [40,-1], 0 )
-    item7.Add( item12, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item13 = wx.StaticText( parent, ID_TEXT, u"balls", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item7.Add( item13, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
-
-    item7.Add( [ 20, 20 ] , 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item14 = wx.StaticText( parent, ID_TEXT, u"Pitch (e):", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item7.Add( item14, 0, wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
-
-    item15 = wx.TextCtrl( parent, ID_TEXTCTRL_PITCH, u"0.65", wx.DefaultPosition, [40,-1], 0 )
-    item7.Add( item15, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item16 = wx.StaticText( parent, ID_TEXT, u"mm", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item7.Add( item16, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
-
-    item17 = wx.StaticText( parent, ID_TEXT, u"Width (A):", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item7.Add( item17, 0, wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
-
-    item18 = wx.TextCtrl( parent, ID_TEXTCTRL_PACKWIDTH, u"17", wx.DefaultPosition, [40,-1], 0 )
-    item7.Add( item18, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item19 = wx.StaticText( parent, ID_TEXT, u"mm", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item7.Add( item19, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
-
-    item7.Add( [ 20, 20 ] , 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item20 = wx.StaticText( parent, ID_TEXT, u"Height (B):", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item7.Add( item20, 0, wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
-
-    item21 = wx.TextCtrl( parent, ID_TEXTCTRL_PACKHEIGHT, u"17", wx.DefaultPosition, [40,-1], 0 )
-    item7.Add( item21, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item22 = wx.StaticText( parent, ID_TEXT, u"mm", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item7.Add( item22, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
-
-    item7.Add( [ 20, 20 ] , 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item23 = wx.StaticText( parent, ID_TEXT, u"Pad diameter:", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item7.Add( item23, 0, wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
-
-    item24 = wx.TextCtrl( parent, ID_TEXTCTRL_PADDIAMETER, u"0.3", wx.DefaultPosition, [40,-1], 0 )
-    item7.Add( item24, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item25 = wx.StaticText( parent, ID_TEXT, u"mm", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item7.Add( item25, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
-
-    item1.Add( item7, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item26 = wx.BoxSizer( wx.HORIZONTAL )
-    
-    item27 = wx.StaticText( parent, ID_TEXT, u"Pin A1 location:", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item26.Add( item27, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item28 = wx.Choice( parent, ID_CHOICE_PIN_A1, wx.DefaultPosition, [60,-1], 
-        [u"NW",u"NE",u"SE",u"SW"] , 0 )
-    item26.Add( item28, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item26.Add( [ 15, 20 ] , 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item29 = wx.StaticText( parent, ID_TEXT, u"Picture view:", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item26.Add( item29, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item30 = wx.Choice( parent, ID_CHOICE_PICTURE_VIEW, wx.DefaultPosition, [90,-1], 
-        [u"Top",u"Bottom"] , 0 )
-    item26.Add( item30, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item26.Add( [ 15, 20 ] , 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item31 = wx.StaticText( parent, ID_TEXT, u"Output format:", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item26.Add( item31, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item32 = wx.Choice( parent, ID_CHOICE_FORMAT, wx.DefaultPosition, [100,-1], 
-        [u"EAGLE SCR",u"TSV (Excel)",u"XML"] , 0 )
-    item26.Add( item32, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item1.Add( item26, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item0.Add( item1, 0, wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
-
-    item34 = wx.Notebook( parent, ID_NOTEBOOK, wx.DefaultPosition, [512,384], 0 )
-    item33 = item34
-    
-    item35 = wx.Panel( item34, -1, pos = wx.DefaultPosition, size = wx.DefaultSize, style = wx.TAB_TRAVERSAL | wx.SUNKEN_BORDER )
-    ResultDialogFunc(item35, False)
-    item34.AddPage( item35, u"Results" )
-
-    item36 = wx.Panel( item34, -1, pos = wx.DefaultPosition, size = wx.DefaultSize,  style = wx.TAB_TRAVERSAL | wx.SUNKEN_BORDER)
-    HelpDialogFunc(item36, False)
-    item34.AddPage( item36, u"Help" )
-
-    item0.Add( item33, 1, wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
-
-    item37 = wx.BoxSizer( wx.HORIZONTAL )
-    
-    item38 = wx.Button( parent, ID_BUTTON_COMPUTE, u"&Compute", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item38.SetDefault()
-    item37.Add( item38, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
-
-    item0.Add( item37, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+    item0.Add( item6, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
 
     if set_sizer == True:
         parent.SetSizer( item0 )
@@ -175,7 +54,7 @@ def MainDialog( parent, call_fit = True, set_sizer = True ):
     
     return item0
 
-ID_HTML_REPORT = 10014
+ID_HTML_REPORT = 10002
 
 def ResultDialogFunc( parent, call_fit = True, set_sizer = True ):
     item0 = wx.BoxSizer( wx.VERTICAL )
@@ -191,7 +70,7 @@ def ResultDialogFunc( parent, call_fit = True, set_sizer = True ):
     
     return item0
 
-ID_HTML_HELP = 10015
+ID_HTML_HELP = 10003
 
 def HelpDialogFunc( parent, call_fit = True, set_sizer = True ):
     item0 = wx.BoxSizer( wx.VERTICAL )
@@ -206,7 +85,7 @@ def HelpDialogFunc( parent, call_fit = True, set_sizer = True ):
     
     return item0
 
-ID_HTML_ABOUT = 10016
+ID_HTML_ABOUT = 10004
 
 def AboutDialogFunc( parent, call_fit = True, set_sizer = True ):
     item0 = wx.BoxSizer( wx.VERTICAL )
@@ -217,6 +96,141 @@ def AboutDialogFunc( parent, call_fit = True, set_sizer = True ):
     item2 = wx.Button( parent, wx.ID_OK, u"OK", wx.DefaultPosition, wx.DefaultSize, 0 )
     item2.SetDefault()
     item0.Add( item2, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    if set_sizer == True:
+        parent.SetSizer( item0 )
+        if call_fit == True:
+            item0.SetSizeHints( parent )
+    
+    return item0
+
+ID_TEXT = 10005
+ID_TEXTCTRL_FILENAME = 10006
+ID_BUTTON_BROWSE = 10007
+ID_TEXTCTRL_BALLWIDTH = 10008
+ID_TEXTCTRL_BALLHEIGHT = 10009
+ID_TEXTCTRL_PITCH = 10010
+ID_TEXTCTRL_PACKWIDTH = 10011
+ID_TEXTCTRL_PACKHEIGHT = 10012
+ID_TEXTCTRL_PADDIAMETER = 10013
+ID_CHOICE_PIN_A1 = 10014
+ID_CHOICE_PICTURE_VIEW = 10015
+ID_CHOICE_FORMAT = 10016
+
+def ParametersDialogFunc( parent, call_fit = True, set_sizer = True ):
+    item0 = wx.BoxSizer( wx.VERTICAL )
+    
+    item1 = wx.BoxSizer( wx.VERTICAL )
+    
+    item2 = wx.BoxSizer( wx.HORIZONTAL )
+    
+    item3 = wx.StaticText( parent, ID_TEXT, u"Input Image Filename:", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item2.Add( item3, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item4 = wx.TextCtrl( parent, ID_TEXTCTRL_FILENAME, u"example_bga.png", wx.DefaultPosition, [380,-1], 0 )
+    item2.Add( item4, 1, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item5 = wx.Button( parent, ID_BUTTON_BROWSE, u"&Browse...", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item2.Add( item5, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item1.Add( item2, 1, wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
+
+    item6 = wx.FlexGridSizer( 0, 11, 0, 0 )
+    
+    item7 = wx.StaticText( parent, ID_TEXT, u"Width (NX):", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item6.Add( item7, 0, wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
+
+    item8 = wx.TextCtrl( parent, ID_TEXTCTRL_BALLWIDTH, u"25", wx.DefaultPosition, [40,-1], 0 )
+    item6.Add( item8, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item9 = wx.StaticText( parent, ID_TEXT, u"balls", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item6.Add( item9, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
+
+    item6.Add( [ 20, 20 ] , 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item10 = wx.StaticText( parent, ID_TEXT, u"Height (NY):", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item6.Add( item10, 0, wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
+
+    item11 = wx.TextCtrl( parent, ID_TEXTCTRL_BALLHEIGHT, u"25", wx.DefaultPosition, [40,-1], 0 )
+    item6.Add( item11, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item12 = wx.StaticText( parent, ID_TEXT, u"balls", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item6.Add( item12, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
+
+    item6.Add( [ 20, 20 ] , 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item13 = wx.StaticText( parent, ID_TEXT, u"Pitch (e):", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item6.Add( item13, 0, wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
+
+    item14 = wx.TextCtrl( parent, ID_TEXTCTRL_PITCH, u"0.65", wx.DefaultPosition, [40,-1], 0 )
+    item6.Add( item14, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item15 = wx.StaticText( parent, ID_TEXT, u"mm", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item6.Add( item15, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
+
+    item16 = wx.StaticText( parent, ID_TEXT, u"Width (A):", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item6.Add( item16, 0, wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
+
+    item17 = wx.TextCtrl( parent, ID_TEXTCTRL_PACKWIDTH, u"17", wx.DefaultPosition, [40,-1], 0 )
+    item6.Add( item17, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item18 = wx.StaticText( parent, ID_TEXT, u"mm", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item6.Add( item18, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
+
+    item6.Add( [ 20, 20 ] , 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item19 = wx.StaticText( parent, ID_TEXT, u"Height (B):", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item6.Add( item19, 0, wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
+
+    item20 = wx.TextCtrl( parent, ID_TEXTCTRL_PACKHEIGHT, u"17", wx.DefaultPosition, [40,-1], 0 )
+    item6.Add( item20, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item21 = wx.StaticText( parent, ID_TEXT, u"mm", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item6.Add( item21, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
+
+    item6.Add( [ 20, 20 ] , 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item22 = wx.StaticText( parent, ID_TEXT, u"Pad diameter:", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item6.Add( item22, 0, wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
+
+    item23 = wx.TextCtrl( parent, ID_TEXTCTRL_PADDIAMETER, u"0.3", wx.DefaultPosition, [40,-1], 0 )
+    item6.Add( item23, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item24 = wx.StaticText( parent, ID_TEXT, u"mm", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item6.Add( item24, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
+
+    item1.Add( item6, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item25 = wx.BoxSizer( wx.HORIZONTAL )
+    
+    item26 = wx.StaticText( parent, ID_TEXT, u"Pin A1 location:", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item25.Add( item26, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item27 = wx.Choice( parent, ID_CHOICE_PIN_A1, wx.DefaultPosition, [60,-1], 
+        [u"NW",u"NE",u"SE",u"SW"] , 0 )
+    item25.Add( item27, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item25.Add( [ 15, 20 ] , 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item28 = wx.StaticText( parent, ID_TEXT, u"Picture view:", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item25.Add( item28, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item29 = wx.Choice( parent, ID_CHOICE_PICTURE_VIEW, wx.DefaultPosition, [90,-1], 
+        [u"Top",u"Bottom"] , 0 )
+    item25.Add( item29, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item25.Add( [ 15, 20 ] , 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item30 = wx.StaticText( parent, ID_TEXT, u"Output format:", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item25.Add( item30, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item31 = wx.Choice( parent, ID_CHOICE_FORMAT, wx.DefaultPosition, [100,-1], 
+        [u"EAGLE SCR",u"TSV (Excel)",u"XML"] , 0 )
+    item25.Add( item31, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item1.Add( item25, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item0.Add( item1, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
 
     if set_sizer == True:
         parent.SetSizer( item0 )

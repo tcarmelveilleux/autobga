@@ -54,6 +54,10 @@ from autobga_wdr import *
 
 VERSION = "1.0"
 
+def getProgDir():
+    # Find-out where we are, to generate filenames
+    return os.path.normpath(os.path.dirname(sys.argv[0]))
+
 # WDR: classes
 
 class AboutDialog(wx.Dialog):
@@ -73,7 +77,7 @@ class AboutDialog(wx.Dialog):
         tcv(at)ro.boto.ca
         or visit <a href="http://code.google.com/p/autobga/">http://code.google.com/p/autobga/</a></p>
         </div>
-        </body></html>""" % (wx.FileSystem.FileNameToURL(parent.progDir + "/doc/autobga_logo.png"), VERSION))
+        </body></html>""" % (wx.FileSystem.FileNameToURL(getProgDir() + "/doc/autobga_logo.png"), VERSION))
         
         # WDR: handler declarations for AboutDialog
 
@@ -95,13 +99,22 @@ class MainPanel(wx.Panel):
                 
         MainDialog(self, True)
         
+        # Make notebook have a non-white background color under Windows XP+
+        notebook = self.getNotebook()
+        col = notebook.GetThemeBackgroundColour()
+        if col and col.Ok():
+            for pageIdx in xrange(notebook.GetPageCount()):
+                notebook.GetPage(pageIdx).SetBackgroundColour(col)
+
+        # Initialize results report
         self.getHtmlReport().SetPage("<html><body><H3>No results yet !</H3></body></html>")
         
-        self.progDir = parent.progDir
-        self.getHtmlHelp().LoadPage(wx.FileSystem.FileNameToURL(self.progDir + "/doc/index.html"))
-        
-        self.getTextCtrlFilename().SetValue(os.path.normpath(self.progDir + "/example_bga.png"))
-        # self.displayInfo("argv0: %s\nprogDir: %s\nexample:%s\nhelp:%s" % (sys.argv[0], self.progDir, os.path.normpath(self.progDir + "/example_bga.png"), wx.FileSystem.FileNameToURL(self.progDir + "/doc/index.html")))
+        # Load help in help panel
+        self.getHtmlHelp().LoadPage(wx.FileSystem.FileNameToURL(getProgDir() + "/doc/index.html"))
+
+        # Initialize all configuration fields
+        self.getTextCtrlFilename().SetValue(os.path.normpath(getProgDir() + "/example_bga.png"))
+        # self.displayInfo("argv0: %s\nprogDir: %s\nexample:%s\nhelp:%s" % (sys.argv[0], getProgDir(), os.path.normpath(getProgDir() + "/example_bga.png"), wx.FileSystem.FileNameToURL(getProgDir() + "/doc/index.html")))
         
         self.getChoiceFormat().SetStringSelection("EAGLE SCR")
         self.getChoicePictureView().SetStringSelection("Bottom")
@@ -113,6 +126,9 @@ class MainPanel(wx.Panel):
         
     # WDR: methods for MainPanel
     
+    def getNotebook(self):
+        return self.FindWindowById( ID_NOTEBOOK )
+
     def getTextCtrlPadDiameter(self):
         return self.FindWindowById( ID_TEXTCTRL_PADDIAMETER )
 
@@ -466,6 +482,8 @@ class MainPanel(wx.Panel):
             
         self.getHtmlReport().SetPage(page)
         self.getHtmlReport().Scroll(0, 0)
+        # Show results page
+        self.getNotebook().ChangeSelection(1)
 
     def onBrowse(self, event):
         """
@@ -492,9 +510,6 @@ class MainFrame(wx.Frame):
         pos = wx.DefaultPosition, size = wx.DefaultSize,
         style = wx.DEFAULT_FRAME_STYLE ):
         wx.Frame.__init__(self, parent, id, title, pos, size, style)
-
-        # Find-out where we are, to generate filenames
-        self.progDir = os.path.normpath(os.path.dirname(sys.argv[0]))
         
         self.CreateMyMenuBar()
         
@@ -544,7 +559,7 @@ class AutoBGAApplication(wx.App):
     
     def OnInit(self):
         wx.InitAllImageHandlers()
-        frame = MainFrame( None, -1, "AutoBGA", [20,20], [500,340] )
+        frame = MainFrame( None, -1, "AutoBGA", [20,20], [600,340] )
         frame.Show(True)
 
         return True
