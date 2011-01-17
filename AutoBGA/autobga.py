@@ -559,7 +559,7 @@ class AutoBGAApplication(wx.App):
     
     def OnInit(self):
         wx.InitAllImageHandlers()
-        frame = MainFrame( None, -1, "AutoBGA", [20,20], [600,340] )
+        frame = MainFrame( None, -1, "AutoBGA v" + VERSION + " by Tennessee Carmel-Veilleux", [20,20], [600,340] )
         frame.Show(True)
 
         return True
