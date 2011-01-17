@@ -2,7 +2,7 @@
 
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "AutoBGA"
-!define PRODUCT_VERSION "1.0"
+!define PRODUCT_VERSION "1.1"
 !define PRODUCT_PUBLISHER "AutoBGA Project"
 !define PRODUCT_WEB_SITE "http://code.google.com/p/autobga"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\autobga.exe"
@@ -52,7 +52,7 @@ var ICONS_GROUP
 ; MUI end ------
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "Setup-AutoBGA-1.0.exe"
+OutFile "Setup-AutoBGA-${PRODUCT_VERSION}.exe"
 InstallDir "$PROGRAMFILES\AutoBGA"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
