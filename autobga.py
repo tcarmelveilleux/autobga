@@ -49,6 +49,8 @@ import GridLoader
 import BgaPadNameGenerator
 import wx
 import wx.html as html
+import EagleBgaOutput
+import EagleBgaPlotter
 
 from autobga_wdr import *
 
@@ -175,7 +177,9 @@ class MainPanel(wx.Panel):
         
     def initLocalData(self):
         self.localValues = {"width" : 0, 
-                            "height" : 0, 
+                            "height" : 0,
+                            "packageWidth" : 0.0,
+                            "packageHeight" : 0.0,
                             "pitch" : 0.0,
                             "padDiameter" : 0.0,
                             "pinA1Corner" : "SE",
@@ -261,13 +265,19 @@ class MainPanel(wx.Panel):
         return (True, value)
     
     def validateControls(self):
-        (isValid, width) = self.validateIntInRange("Width", self.getTextCtrlBallWidth(), 1, 200)
+        (isValid, width) = self.validateIntInRange("Width (NX)", self.getTextCtrlBallWidth(), 1, 200)
         if not isValid: return False
         
-        (isValid, height) = self.validateIntInRange("Height", self.getTextCtrlBallHeight(), 1, 200)
+        (isValid, height) = self.validateIntInRange("Height (NY)", self.getTextCtrlBallHeight(), 1, 200)
         if not isValid: return False
-            
-        (isValid, pitch) = self.validateFloatInRange("Pitch", self.getTextCtrlPitch(), 0.1, 2.0)
+        
+        (isValid, packWidth) = self.validateFloatInRange("Width (A)", self.getTextCtrlPackWidth(), 0.5, 100.0)
+        if not isValid: return False
+
+        (isValid, packHeight) = self.validateFloatInRange("Height (B)", self.getTextCtrlPackHeight(), 0.5, 100.0)
+        if not isValid: return False
+
+        (isValid, pitch) = self.validateFloatInRange("Pitch (e)", self.getTextCtrlPitch(), 0.1, 2.0)
         if not isValid: return False
 
         (isValid, padDiameter) = self.validateFloatInRange("Pad diameter", self.getTextCtrlPadDiameter(), 0.05, 2.0)
@@ -326,29 +336,30 @@ class MainPanel(wx.Panel):
             self.displayInfo(message)
             return True
         else:
-            self.displayError("Error accessing the clipboard :(\nResult lost. Please retry.")
+            self.displayError("Error accessing the clipboard :\nResult lost. Please retry.")
             return False
         
-    def _outputTSV(self, ballList):
+    def _outputTSV(self, ballList, localValues):
         tsvList = []
         tsvList.append("Pad name\tX position (mm)\tY position (mm)\tPad diameter (mm)")
         tsvList.extend(["%s\t%.3f\t%.3f\t%.3f" % ball for ball in ballList])
         resultString = "\n".join(tsvList)
         return self._copyToClipboard(resultString, "Success: TSV data copied to clipboard !")
             
-    def _outputEAGLE(self, ballList):
-        # ball[0] = name
-        # ball[1] = X
-        # ball[2] = y
-        # ball[3] = diameter
-        eagleList = []
-        eagleList.append("change style continuous;\ngrid mm;\nset wire_bend 2;\nlayer 1;")
-        eagleList.extend(["smd %.3f %.3f -100 '%s' (%.3f %.3f);" % (ball[3], ball[3], ball[0], ball[1], ball[2]) for ball in ballList])
-        eagleList.append("grid last;");
-        resultString = "\n".join(eagleList)
+    def _outputEAGLE(self, ballList, localValues):
+        plotter = EagleBgaPlotter.EagleBgaPlotter(ballList, localValues)
+        
+        try:
+            resultString = plotter.process()
+            if not resultString:
+                self.displayError("Problem while trying to generate EAGLE data !")
+                return False
+        except RuntimeError, e:
+            self.displayError("Problem while trying to generate EAGLE data: %s !" % str(e))
+            
         return self._copyToClipboard(resultString, "Success: EAGLE Script data copied to clipboard !")
         
-    def _outputXML(self, ballList):
+    def _outputXML(self, ballList, localValues):
         xmlList = []
         xmlList.append("""<?xml version="1.0" encoding="UTF-8"?>
 <footprintLibrary xmlns="http://www.tentech.ca/schemas/FootprintLibrary"
@@ -369,7 +380,6 @@ class MainPanel(wx.Panel):
         resultString = "\n".join(xmlList)
         return self._copyToClipboard(resultString, "Success: XML data copied to clipboard !")
         
-                
     def _outputGrid(self, grid):
         """
         Outputs the BGA grid in the selected file format and
@@ -425,11 +435,11 @@ class MainPanel(wx.Panel):
         
         # Call correct handler
         if self.localValues["outputFormat"] == "EAGLE SCR":
-            self._outputEAGLE(resultList)
+            self._outputEAGLE(resultList, self.localValues)
         elif self.localValues["outputFormat"] == "XML":
-            self._outputXML(resultList)
+            self._outputXML(resultList, self.localValues)
         elif self.localValues["outputFormat"] == "TSV (Excel)":
-            self._outputTSV(resultList)
+            self._outputTSV(resultList, self.localValues)
             
         return "".join(tableList)
             
