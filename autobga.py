@@ -49,8 +49,9 @@ import GridLoader
 import BgaPadNameGenerator
 import wx
 import wx.html as html
-import EagleBgaOutput
 import EagleBgaPlotter
+import TSVBgaPlotter
+import XMLBgaPlotter
 
 from autobga_wdr import *
 
@@ -384,10 +385,8 @@ class MainPanel(wx.Panel):
             return False
         
     def _outputTSV(self, ballList, localValues):
-        tsvList = []
-        tsvList.append("Pad name\tX position (mm)\tY position (mm)\tPad diameter (mm)")
-        tsvList.extend(["%s\t%.3f\t%.3f\t%.3f" % ball for ball in ballList])
-        resultString = "\n".join(tsvList)
+        plotter = TSVBgaPlotter.TSVBgaPlotter(ballList, localValues)
+        resultString = plotter.process()
         return self._copyToClipboard(resultString, "Success: TSV data copied to clipboard !")
             
     def _outputEAGLE(self, ballList, localValues):
@@ -404,24 +403,16 @@ class MainPanel(wx.Panel):
         return self._copyToClipboard(resultString, "Success: EAGLE Script data copied to clipboard !")
         
     def _outputXML(self, ballList, localValues):
-        xmlList = []
-        xmlList.append("""<?xml version="1.0" encoding="UTF-8"?>
-<footprintLibrary xmlns="http://www.tentech.ca/schemas/FootprintLibrary"
- xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <description>Single footprint generated with AutoBGA</description>
-    <footprints>
-        <footprint name="bga_%(width)d_%(height)d">
-            <description>BGA%(width)d x %(height)d balls, %(pitch).3f mm pitch</description>
-            <geometry>
-            """ % self.localValues)
+        plotter = XMLBgaPlotter.XMLBgaPlotter(ballList, localValues, VERSION)
         
-        xmlList.extend(['<padElement name="%s" layer="topLayer" thickness="0" xPos="%.3f" yPos="%.3f" width="%.3f" height="%.3f" angle="0" padShape="circle" maxTextHeight="%.3f"/>' % (ball[0], ball[1], ball[2], ball[3], ball[3], 0.8*ball[3]) for ball in ballList])
-        xmlList.append("""
-            </geometry>
-        </footprint>
-    </footprints>
-</footprintLibrary>""")
-        resultString = "\n".join(xmlList)
+        try:
+            resultString = plotter.process()
+            if not resultString:
+                self.displayError("Problem while trying to generate XML data !")
+                return False
+        except RuntimeError, e:
+            self.displayError("Problem while trying to generate XML data: %s !" % str(e))
+            
         return self._copyToClipboard(resultString, "Success: XML data copied to clipboard !")
         
     def _outputGrid(self, grid):

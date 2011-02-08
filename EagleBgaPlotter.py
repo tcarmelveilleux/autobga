@@ -3,6 +3,15 @@ from BgaPlotter import *
 class EagleBgaPlotter(BgaPlotter):
     def __init__(self, ballList, localValues):
         """
+        EAGLE BGA Plotter Implementation.
+        
+        This version has been tested with EAGLE 4.16r2 and EAGLE 5.11.
+        
+        Supports all features: courtyard, silkscreen items, footprint pads.
+        
+        The output script is human-readable. Layers and line widths are
+        only changed when necessary, thus reducing file size and improving
+        readability.
         """
         BgaPlotter.__init__(self, ballList, localValues)
         self.eagleScriptLines = []
