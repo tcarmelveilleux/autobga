@@ -8,10 +8,11 @@ class BgaPlotter:
 
         # Save geometry data locally
         self.layers = ("silkscreen", "courtyard")
-        self.bgaWidth = localValues["width"]
-        self.bgaHeight = localValues["height"]
+        self.packageWidth = localValues["packageWidth"]
+        self.packageHeight = localValues["packageHeight"]
         self.ballDiameter = localValues["padDiameter"]
-        self.padA1Corner = localValues["pinA1Corner"]
+        self.pinA1Corner = localValues["pinA1Corner"]
+        self.pinA1Point = localValues["pinA1Point"]
         
         # Line width hardcoded value is 0.2mm (8 mil)
         self.lineWidth = 0.2
@@ -59,13 +60,13 @@ class BgaPlotter:
         self.init_plotter()
     
         # Step 1: Draw outline rectangle on silkscreen
-        outlineUpperLeft = (-self.bgaWidth / 2.0, self.bgaHeight / 2.0)
-        outlineLowerRight = (self.bgaWidth / 2.0, -self.bgaHeight / 2.0)
+        outlineUpperLeft = (-self.packageWidth / 2.0, self.packageHeight / 2.0)
+        outlineLowerRight = (self.packageWidth / 2.0, -self.packageHeight / 2.0)
         self._draw_rectangle_outline("silkOutline", outlineUpperLeft, outlineLowerRight, self.lineWidth, "silkscreen")
 
         # Step 2: Draw pin A1 dot on silkscreen in NW corner
-        a1x, a1y = self._get_pin_a1_point()        
-        dotCenter = (-((self.bgaHeight / 2.0) + (1.5 * self.lineWidth)), a1y)
+        a1x, a1y = self.pinA1Point     
+        dotCenter = (-((self.packageWidth / 2.0) + (1.5 * self.lineWidth)), a1y)
         
         self.draw_circle("a1cornerDot", dotCenter, self.lineWidth, self.lineWidth, "silkscreen")
         
@@ -104,6 +105,43 @@ class BgaPlotter:
             name, x, y, diameter = tuple(ball)
             self.draw_pad(name, (x, y), diameter)
 
+        # Step 5: Draw corner line
+        # Step 5a: Find intercept of limit line
+        minDistFromA1 = (diameter / 2.0) + self.lineWidth
+        
+        dLineX = a1x + (minDistFromA1 * math.cos(3.0 * math.pi / 4.0))
+        dLineY = a1y + (minDistFromA1 * math.sin(3.0 * math.pi / 4.0))
+        if dLineX > (-self.packageWidth / 2.0) and dLineY < (self.packageHeight / 2.0):
+            # Limit line is within package, we can try to draw a corner line
+            limitIntercept = dLineY - dLineX
+        else:
+            # Limit line is not within package: we can't draw a corner line
+            limitIntercept = None
+            
+        # Step 5b: Find minimum distance from side desired
+        minDistFromSide = min([(self.packageHeight / 2.0) - (a1y + (diameter / 2.0)),
+                               (a1x - (diameter / 2.0)) - (-self.packageWidth / 2.0)]) / 2.0
+        minCornerDist = math.sqrt(2) * minDistFromSide
+        
+        cLineX = (-self.packageWidth / 2.0) + (minCornerDist * math.cos(-math.pi / 4.0))
+        cLineY = (self.packageHeight / 2.0) + (minCornerDist * math.sin(-math.pi / 4.0))
+        cornerIntercept = cLineY - cLineX
+        
+        # Step 5c: Draw actual corner line
+        if limitIntercept:
+            if cornerIntercept > limitIntercept:
+                # Corner intercept higher than limit intercept: use corner intercept
+                intercept = cornerIntercept
+            else:
+                # Corner intercept would overlap array: use limit intercept
+                intercept = limitIntercept
+
+            # Use line equation: y = (1*x) + intercept
+            leftEdgePoint = (-self.packageWidth / 2.0, (-self.packageWidth / 2.0) + intercept)
+            topEdgePoint = ((self.packageHeight / 2.0) - intercept, (self.packageHeight / 2.0))
+            
+            self.draw_line("corner", leftEdgePoint, topEdgePoint, self.lineWidth, "silkscreen")
+            
         # Finish plotting (clean-up and return data)
         return self.finish_plotter()
     
@@ -132,18 +170,6 @@ class BgaPlotter:
         newX = x * math.cos(theta) - y * math.sin(theta)
         newY = x * math.sin(theta) + y * math.cos(theta)
         return (newX, newY)
-    
-    def _get_pin_a1_point(self):
-        """
-        Returns the center coordinate of pin A1 from the ball list
-        as a tuple (x,y). Returns None if pin A1 is not found (should
-        never happen)
-        """
-        point = None
-        for ball in self.ballList:
-            name, x, y, diameter = tuple(ball)
-            if name.upper() == "A1":
-                point = (x, y)
         
     def _rotate_part(self):
         """
@@ -159,15 +185,18 @@ class BgaPlotter:
         mustSwapWidthHeight = {"NE": True, "NW" : False, "SW" : True, "SE" : False}
 
         # Rotate all balls so that pin A1 is in the NW corner
-        theta = partRotation[self.padA1Corner]
+        theta = partRotation[self.pinA1Corner]
         newBallList = []
         for ball in self.ballList:
             name, x, y, diameter = ball
-            (x, y) = self._rotate(x, y)
+            (x, y) = self._rotate((x, y), theta)
             newBallList.append((name, x, y, diameter))
         self.ballList = newBallList
         
+        # Rotate pin A1 position
+        self.pinA1Point = self._rotate(self.pinA1Point, theta)
+        
         # Swap dimensions to simulate outline rotation following balls rotation
-        if mustSwapWidthHeight[self.padA1Corner]:
-            self.bgaHeight, self.bgaWidth = (self.bgaWidth, self.bgaHeight)
+        if mustSwapWidthHeight[self.pinA1Corner]:
+            self.packageHeight, self.packageWidth = (self.packageWidth, self.packageHeight)
                 

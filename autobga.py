@@ -54,7 +54,7 @@ import EagleBgaPlotter
 
 from autobga_wdr import *
 
-VERSION = "1.1"
+VERSION = "1.2"
 
 def getProgDir():
     # Find-out where we are, to generate filenames
@@ -183,6 +183,7 @@ class MainPanel(wx.Panel):
                             "pitch" : 0.0,
                             "padDiameter" : 0.0,
                             "pinA1Corner" : "SE",
+                            "pinA1Point" : (0.0, 0.0),
                             "outputFormat" : "EAGLE SCR",
                             "pictureView" : "Bottom",
                             "inFilename" : ""}
@@ -265,22 +266,35 @@ class MainPanel(wx.Panel):
         return (True, value)
     
     def validateControls(self):
+        """
+        Validate that all parameters controls are within valid ranges and
+        transfer the values to local parameter storage.
+        
+        If an error occurs, returns False, otherwise return True.
+        
+        The control in which a value error is found will be highlighted and
+        focused.
+        """
         (isValid, width) = self.validateIntInRange("Width (NX)", self.getTextCtrlBallWidth(), 1, 200)
         if not isValid: return False
         
         (isValid, height) = self.validateIntInRange("Height (NY)", self.getTextCtrlBallHeight(), 1, 200)
         if not isValid: return False
         
-        (isValid, packWidth) = self.validateFloatInRange("Width (A)", self.getTextCtrlPackWidth(), 0.5, 100.0)
+        (isValid, packageWidth) = self.validateFloatInRange("Width (A)", self.getTextCtrlPackWidth(), 0.5, 100.0)
         if not isValid: return False
 
-        (isValid, packHeight) = self.validateFloatInRange("Height (B)", self.getTextCtrlPackHeight(), 0.5, 100.0)
+        (isValid, packageHeight) = self.validateFloatInRange("Height (B)", self.getTextCtrlPackHeight(), 0.5, 100.0)
         if not isValid: return False
 
         (isValid, pitch) = self.validateFloatInRange("Pitch (e)", self.getTextCtrlPitch(), 0.1, 2.0)
         if not isValid: return False
 
         (isValid, padDiameter) = self.validateFloatInRange("Pad diameter", self.getTextCtrlPadDiameter(), 0.05, 2.0)
+        if not isValid: return False
+
+        # Make sure package dimensions are not too small compared to ball array size
+        isValid = self._validateDimensions(width, height, packageWidth, packageHeight, pitch)
         if not isValid: return False
 
         if not os.path.exists(self.getTextCtrlFilename().GetValue()):
@@ -303,6 +317,15 @@ class MainPanel(wx.Panel):
         return True
     
     def _getPosition(self, x, y, width, height, pitch):
+        """
+        Ball position generator.
+        
+        Determine the (x, y) position of a ball (in mm) from an
+        x,y ball index (0...width-1, 0...height-1) and the pad
+        pitch.
+        
+        Returns (x,y), a ball position center point.
+        """
         if (width % 2) == 0:
             # Even width:
             minX = -(float((width / 2) - 1) + 0.5) * pitch
@@ -312,17 +335,38 @@ class MainPanel(wx.Panel):
 
         if (height % 2) == 0:
             # Even height:
-            minY = float((width / 2) - 1) + 0.5 * pitch
+            minY = float((height / 2) - 1) + 0.5 * pitch
         else:
             # Odd width:
-            minY = float((width - 1) / 2) * pitch
+            minY = float((height - 1) / 2) * pitch
             
         xPos = (minX + (float(x) * pitch))
         yPos = (minY - (float(y) * pitch))
         return (xPos, yPos)
-
+    
+    def _validateDimensions(self, width, height, packageWidth, packageHeight, pitch):
+        minPackageWidth = width * pitch
+        minPackageHeight = height * pitch
+        
+        if packageWidth < minPackageWidth:
+            self.displayError("Value of field Width (A) must be at least %.3f mm,\notherwise package outline will overlap balls." % (minPackageWidth))
+            self.highlight(self.getTextCtrlPackWidth())
+            return False
+        
+        if packageHeight < minPackageHeight:
+            self.displayError("Value of field Height (B) must be at least %.3f mm,\notherwise package outline will overlap balls." % (minPackageHeight))
+            self.highlight(self.getTextCtrlPackHeight())
+            return False
+        
+        self.unhighlight(self.getTextCtrlPackWidth())
+        self.unhighlight(self.getTextCtrlPackHeight())
+        return True
         
     def _copyToClipboard(self, text, message):
+        """
+        Copy the "text" to the clipboard and then display an
+        info message dialog with "message" as the contents.
+        """
         if not wx.TheClipboard.IsOpened():
             if sys.platform == 'win32':
                 cleanText = text.replace("\n","\r\n")
@@ -396,7 +440,7 @@ class MainPanel(wx.Panel):
         else:
             flippedGrid = grid
         
-        # Create list of pads
+        # Create list of pads to be drawn based on positions detected in grid
         resultList = []
         height, width = grid.shape
         pitch = self.localValues["pitch"]
@@ -404,8 +448,14 @@ class MainPanel(wx.Panel):
 
         for yIdx in xrange(height):
             for xIdx in xrange(width):
+                xPos, yPos = self._getPosition(xIdx, yIdx, width, height, pitch)
+
+                # Save pin A1 position even if it does not exist, for corner line drawing
+                if padNames[xIdx][yIdx].upper() == "A1":
+                    self.localValues["pinA1Point"] = (xPos, yPos)
+                    
+                # Add ball if it exists in detected grid
                 if flippedGrid[yIdx, xIdx]:
-                    xPos, yPos = self._getPosition(xIdx, yIdx, width, height, pitch)
                     resultList.append((padNames[xIdx][yIdx], xPos, yPos, padDiameter))
 
         # Create display table
@@ -444,6 +494,15 @@ class MainPanel(wx.Panel):
         return "".join(tableList)
             
     def onCompute(self, event):
+        """
+        Event handler for the "compute" button. 
+        
+        Steps:
+        1- Calls controls validation
+        2- Runs the computation to build the grid array
+        3- Output the grid array
+        4- Display the results page
+        """
         # Validate controls and transfer values to self.localValues
         if not self.validateControls():
             return
@@ -468,6 +527,7 @@ class MainPanel(wx.Panel):
         if not success:
             page = "<html><body><h1>Error: '%s' !</h1></body></html>" % strValue
         else:
+            # Generate BGA and output in the correct format
             self.localValues["table"] = self._outputGrid(bgaArray)
             self.localValues["outFilename"] = wx.FileSystem.FileNameToURL(strValue)
             page = """
@@ -497,6 +557,8 @@ class MainPanel(wx.Panel):
 
     def onBrowse(self, event):
         """
+        Event handler for the "Browse" button.
+        
         Browse for image files. Can only select existing files.
         """
         wildcard = "PNG files (*.png)|*.png|BMP files (*.bmp)|*.bmp"
