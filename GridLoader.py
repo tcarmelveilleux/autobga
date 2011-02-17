@@ -114,22 +114,27 @@ class GridLoader:
     def eliminateCross(self, binData):
         """
         Blank-out horizontal and vertical crosslines by
-        detecting rows or columns with more than 70% of their
-        pixels lit and clearing them.
+        detecting rows or columns with more than 80% of their
+        pixels lit and clearing them. When the dimension being
+        checked has more than 20 pixels, turn the threshold down to
+        50%.
         
         Returns: a new clean bin data array
         """
         height, width = binData.shape
         
+        hThreshold = height >= 20 and 0.5 or 0.8
+        wThreshold = width >= 20 and 0.5 or 0.8
+        
         newBinData = binData.copy()
         binaryBin = newBinData > 127
         
         for vLineIdx in range(width):
-            if sum(binaryBin[:,vLineIdx]) > (float(height) * 0.8):
+            if sum(binaryBin[:,vLineIdx]) > (float(height) * hThreshold):
                 newBinData[:,vLineIdx] = 0
 
         for hLineIdx in range(height):
-            if sum(binaryBin[hLineIdx,:]) > (float(width) * 0.8):
+            if sum(binaryBin[hLineIdx,:]) > (float(width) * wThreshold):
                 newBinData[hLineIdx,:] = 0
                 
         return newBinData
