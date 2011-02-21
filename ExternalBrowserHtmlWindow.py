@@ -11,7 +11,8 @@ Revision: $Rev$
 Copyright 2010 Tennessee Carmel-Veilleux
 
 Description: 
-Main user interface for AutoBGA
+Simple HtmlWindow that redirects all web links (http://)
+to a new browser instance.
 
 License:
 Copyright (c) 2010, Tennessee Carmel-Veilleux

@@ -12,12 +12,15 @@ import wx.animate
 
 # Custom source
 import ExternalBrowserHtmlWindow
+import ImageHandlingHtmlWindow
 import wx.html as html
 
 # Window functions
 
 ID_NOTEBOOK = 10000
 ID_BUTTON_COMPUTE = 10001
+ID_BUTTON_EXPORT_TO_CLIPBOARD = 10002
+ID_BUTTON_EXPORT_TO_FILE = 10003
 
 def MainDialog( parent, call_fit = True, set_sizer = True ):
     item0 = wx.BoxSizer( wx.VERTICAL )
@@ -45,6 +48,16 @@ def MainDialog( parent, call_fit = True, set_sizer = True ):
     item7.SetDefault()
     item6.Add( item7, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
 
+    item6.Add( [ 20, 20 ] , 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item8 = wx.Button( parent, ID_BUTTON_EXPORT_TO_CLIPBOARD, u"Export to clipboard", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item8.Enable(False)
+    item6.Add( item8, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item9 = wx.Button( parent, ID_BUTTON_EXPORT_TO_FILE, u"Export to file...", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item9.Enable(False)
+    item6.Add( item9, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
     item0.Add( item6, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
 
     if set_sizer == True:
@@ -54,12 +67,12 @@ def MainDialog( parent, call_fit = True, set_sizer = True ):
     
     return item0
 
-ID_HTML_REPORT = 10002
+ID_HTML_REPORT = 10004
 
 def ResultDialogFunc( parent, call_fit = True, set_sizer = True ):
     item0 = wx.BoxSizer( wx.VERTICAL )
     
-    item1 = ExternalBrowserHtmlWindow.ExternalBrowserHtmlWindow(parent, ID_HTML_REPORT, wx.DefaultPosition, wx.Size(512,384), html.HW_SCROLLBAR_AUTO)
+    item1 = ImageHandlingHtmlWindow.ImageHandlingHtmlWindow(parent, ID_HTML_REPORT, wx.DefaultPosition, wx.Size(512,384), html.HW_SCROLLBAR_AUTO)
 
     item0.Add( item1, 1, wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
 
@@ -70,7 +83,7 @@ def ResultDialogFunc( parent, call_fit = True, set_sizer = True ):
     
     return item0
 
-ID_HTML_HELP = 10003
+ID_HTML_HELP = 10005
 
 def HelpDialogFunc( parent, call_fit = True, set_sizer = True ):
     item0 = wx.BoxSizer( wx.VERTICAL )
@@ -85,7 +98,7 @@ def HelpDialogFunc( parent, call_fit = True, set_sizer = True ):
     
     return item0
 
-ID_HTML_ABOUT = 10004
+ID_HTML_ABOUT = 10006
 
 def AboutDialogFunc( parent, call_fit = True, set_sizer = True ):
     item0 = wx.BoxSizer( wx.VERTICAL )
@@ -104,18 +117,18 @@ def AboutDialogFunc( parent, call_fit = True, set_sizer = True ):
     
     return item0
 
-ID_TEXT = 10005
-ID_TEXTCTRL_FILENAME = 10006
-ID_BUTTON_BROWSE = 10007
-ID_TEXTCTRL_BALLWIDTH = 10008
-ID_TEXTCTRL_BALLHEIGHT = 10009
-ID_TEXTCTRL_PITCH = 10010
-ID_TEXTCTRL_PACKWIDTH = 10011
-ID_TEXTCTRL_PACKHEIGHT = 10012
-ID_TEXTCTRL_PADDIAMETER = 10013
-ID_CHOICE_PIN_A1 = 10014
-ID_CHOICE_PICTURE_VIEW = 10015
-ID_CHOICE_FORMAT = 10016
+ID_TEXT = 10007
+ID_TEXTCTRL_FILENAME = 10008
+ID_BUTTON_BROWSE = 10009
+ID_TEXTCTRL_BALLWIDTH = 10010
+ID_TEXTCTRL_BALLHEIGHT = 10011
+ID_TEXTCTRL_PITCH = 10012
+ID_TEXTCTRL_PACKWIDTH = 10013
+ID_TEXTCTRL_PACKHEIGHT = 10014
+ID_TEXTCTRL_PADDIAMETER = 10015
+ID_CHOICE_PIN_A1 = 10016
+ID_CHOICE_PICTURE_VIEW = 10017
+ID_CHOICE_FORMAT = 10018
 
 def ParametersDialogFunc( parent, call_fit = True, set_sizer = True ):
     item0 = wx.BoxSizer( wx.VERTICAL )
@@ -241,7 +254,7 @@ def ParametersDialogFunc( parent, call_fit = True, set_sizer = True ):
 
 # Menubar functions
 
-ID_MENU = 10017
+ID_MENU = 10019
 
 def MyMenuBarFunc():
     item0 = wx.MenuBar()

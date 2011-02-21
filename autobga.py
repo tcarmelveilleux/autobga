@@ -52,6 +52,7 @@ import wx.html as html
 import EagleBgaPlotter
 import TSVBgaPlotter
 import XMLBgaPlotter
+from GridUtils import *
 
 from autobga_wdr import *
 
@@ -111,6 +112,7 @@ class MainPanel(wx.Panel):
 
         # Initialize results report
         self.getHtmlReport().SetPage("<html><body><H3>No results yet !</H3></body></html>")
+        self.getHtmlReport().SetOwner(self)
         
         # Load help in help panel
         self.getHtmlHelp().LoadPage(wx.FileSystem.FileNameToURL(getProgDir() + "/doc/index.html"))
@@ -123,12 +125,22 @@ class MainPanel(wx.Panel):
         self.getChoicePictureView().SetStringSelection("Bottom")
         self.getChoicePinA1().SetStringSelection("SE")
         
+        self.fileFormatExtensions = {"EAGLE SCR" : "*.scr", "XML" : "*.xml", "TSV (Excel)" : "*.tsv"}
+        
         # WDR: handler declarations for MainPanel
+        wx.EVT_BUTTON(self, ID_BUTTON_EXPORT_TO_FILE, self.onExportToFile)
+        wx.EVT_BUTTON(self, ID_BUTTON_EXPORT_TO_CLIPBOARD, self.onExportToClipboard)
         wx.EVT_BUTTON(self, ID_BUTTON_COMPUTE, self.onCompute)
         wx.EVT_BUTTON(self, ID_BUTTON_BROWSE, self.onBrowse)
         
     # WDR: methods for MainPanel
     
+    def getButtonExportToFile(self):
+        return self.FindWindowById( ID_BUTTON_EXPORT_TO_FILE )
+
+    def getButtonExportToClipboard(self):
+        return self.FindWindowById( ID_BUTTON_EXPORT_TO_CLIPBOARD )
+
     def getNotebook(self):
         return self.FindWindowById( ID_NOTEBOOK )
 
@@ -175,7 +187,7 @@ class MainPanel(wx.Panel):
         return self.FindWindowById( ID_TEXTCTRL_FILENAME )
     
     # WDR: handler implementations for MainPanel
-        
+
     def initLocalData(self):
         self.localValues = {"width" : 0, 
                             "height" : 0,
@@ -308,7 +320,6 @@ class MainPanel(wx.Panel):
 
         pinA1Corner = self.getChoicePinA1().GetStringSelection()
         pictureView = self.getChoicePictureView().GetStringSelection()
-        outputFormat = self.getChoiceFormat().GetStringSelection()
         
         # We got here: all controls are valid, store data
         for key, value in locals().items():
@@ -387,7 +398,7 @@ class MainPanel(wx.Panel):
     def _outputTSV(self, ballList, localValues):
         plotter = TSVBgaPlotter.TSVBgaPlotter(ballList, localValues)
         resultString = plotter.process()
-        return self._copyToClipboard(resultString, "Success: TSV data copied to clipboard !")
+        return resultString
             
     def _outputEAGLE(self, ballList, localValues):
         plotter = EagleBgaPlotter.EagleBgaPlotter(ballList, localValues)
@@ -396,11 +407,11 @@ class MainPanel(wx.Panel):
             resultString = plotter.process()
             if not resultString:
                 self.displayError("Problem while trying to generate EAGLE data !")
-                return False
+                return None
         except RuntimeError, e:
             self.displayError("Problem while trying to generate EAGLE data: %s !" % str(e))
             
-        return self._copyToClipboard(resultString, "Success: EAGLE Script data copied to clipboard !")
+        return resultString
         
     def _outputXML(self, ballList, localValues):
         plotter = XMLBgaPlotter.XMLBgaPlotter(ballList, localValues, VERSION)
@@ -409,27 +420,34 @@ class MainPanel(wx.Panel):
             resultString = plotter.process()
             if not resultString:
                 self.displayError("Problem while trying to generate XML data !")
-                return False
+                return None
         except RuntimeError, e:
             self.displayError("Problem while trying to generate XML data: %s !" % str(e))
             
-        return self._copyToClipboard(resultString, "Success: XML data copied to clipboard !")
+        return resultString
         
-    def _outputGrid(self, grid):
+    def _getProcessedGrid(self, grid):
         """
-        Outputs the BGA grid in the selected file format and
-        returns a string containing an HTML table of the resulting footprint. 
+        Get the processed grid ready for further output.
+        
+        Updates internal state related to processed grid.
+        
+        Returns a resultList containing the processed grid items
+        with all ball names, positions and diameters.
         """
         
         # Generate pad names now
         nameGenerator = BgaPadNameGenerator.BgaPadNameGenerator(grid.shape[1], grid.shape[0], self.localValues["pinA1Corner"])        
         padNames = nameGenerator.generatePadNames()
-
+        self.localValues["padNames"] = padNames
+        
         # Mirror along the vertical axis (flip horizontally) if picture was bottom view
         if self.localValues["pictureView"].upper() == "BOTTOM":
             flippedGrid = grid[:,::-1]
         else:
             flippedGrid = grid
+
+        self.localValues["flippedGrid"] = flippedGrid
         
         # Create list of pads to be drawn based on positions detected in grid
         resultList = []
@@ -449,8 +467,16 @@ class MainPanel(wx.Panel):
                 if flippedGrid[yIdx, xIdx]:
                     resultList.append((padNames[xIdx][yIdx], xPos, yPos, padDiameter))
 
+        return resultList
+
+    def _outputGridHTML(self):
+        width, height = (self.localValues["width"], self.localValues["height"])
+        flippedGrid = self.localValues["flippedGrid"]
+        padNames = self.localValues["padNames"]        
+
         # Create display table
         tableList = ['<font size="-2"><table border="1">']
+                
         for yIdx in xrange(height):
             tableList.append("<tr>")
             for xIdx in xrange(width):
@@ -474,16 +500,97 @@ class MainPanel(wx.Panel):
             tableList.append("</tr>")
         tableList.append("</table></font>")
         
+        return "".join(tableList)
+    
+    def _plotGrid(self, resultList, filename):
+        """
+        Generate plot data from BGA grid data in "resultList". Outputs
+        to a file named "filename". If "filename" is None, output is copied
+        to the clipboard.
+        """
         # Call correct handler
         if self.localValues["outputFormat"] == "EAGLE SCR":
-            self._outputEAGLE(resultList, self.localValues)
+            resultStr = self._outputEAGLE(resultList, self.localValues)
         elif self.localValues["outputFormat"] == "XML":
-            self._outputXML(resultList, self.localValues)
+            resultStr = self._outputXML(resultList, self.localValues)
         elif self.localValues["outputFormat"] == "TSV (Excel)":
-            self._outputTSV(resultList, self.localValues)
+            resultStr = self._outputTSV(resultList, self.localValues)
+        
+        if resultStr:
+            if filename:
+                try:
+                    outFile = file(filename, "w+")
+                    outFile.write(resultStr + "\n")
+                    outFile.close()
+                except IOError, e:
+                    self.displayError('Error saving to file "%s":\n %s' % (filename, str(e)))
+            else:
+                self._copyToClipboard(resultStr, "Success: %s data copied to clipboard !" % self.localValues["outputFormat"])
+    
+    def _displayResults(self, success, errorMessage):
+        if not success:
+            page = "<html><body><h1>Error: '%s' !</h1></body></html>" % errorMessage
+        else:
+            # Generate BGA and output in the correct format
+            page = """
+            <html><body>
+            <h1>Results</h1>
+            <p><u>Table of contents</u></p>
+            <ul>
+            <li><a href="#input">Input image preview</a></li>
+            <li><a href="#detected">Pads detected</a></li>
+            <li><a href="#table">Table representation of output</a></li>
+            </ul>
+            <a name="input"></a>
+            <h2>Input image:</h2>
+            <p><img src="%(inFilename)s"></p>
+            <a name="detected"></a>            
+            <h2>Pads detected overlay (red dots):</h2>
+            <p>You can click on any cell of the image to toggle the ball present/absent state that was detected prior to export.
+            The update is instantaneous. You do not need to click "compute" to apply the changes.</p>
+            <p><a href="resultImage"><img src="%(outFilenameURL)s"></a></p>
+            <a name="table">
+            <h2>Table representation of output footprint (from top):</h2>
+            <p>%(table)s</p>
+            </body></html>""" % self.localValues
             
-        return "".join(tableList)
+        self.getHtmlReport().SetPage(page)
             
+    def onExportToFile(self, event):
+        """
+        Event handler for the "Export to file..." button.
+        """
+        # Obtain the output format
+        outputFormat = self.getChoiceFormat().GetStringSelection()
+        self.localValues["outputFormat"] = outputFormat
+        wildcard = "%s (%s)|%s|All Files (*.*)|*.*" % (outputFormat, self.fileFormatExtensions[outputFormat], self.fileFormatExtensions[outputFormat])
+        
+        fileDialog = wx.FileDialog(
+            self, message="Choose an output file...",
+            defaultDir=os.getcwd(),
+            defaultFile="",
+            wildcard=wildcard,
+            style=wx.SAVE | wx.FD_OVERWRITE_PROMPT
+            )
+
+        if fileDialog.ShowModal() == wx.ID_OK:
+            filename = fileDialog.GetPath()
+            
+            # Plot result and save to file
+            resultList = self._getProcessedGrid(self.localValues["bgaArray"])
+            self._plotGrid(resultList, filename)
+        
+        fileDialog.Destroy()        
+
+    def onExportToClipboard(self, event):
+        """
+        Event handler for the "Export to clipboard" button
+        """
+        # Plot result and save to clipboard
+        self.localValues["outputFormat"] = self.getChoiceFormat().GetStringSelection()
+        resultList = self._getProcessedGrid(self.localValues["bgaArray"])
+        self._plotGrid(resultList, None)
+        
     def onCompute(self, event):
         """
         Event handler for the "compute" button. 
@@ -499,53 +606,47 @@ class MainPanel(wx.Panel):
             return
         
         # Appear busy
-        self.getButtonBrowse().Enable(False)
-        self.getButtonCompute().Enable(False)
-        wx.BeginBusyCursor()
+        self._startBusy()
+
+        # Create a temporary filename for the output image
+        self.localValues["outImageFilename"] = get_temp_filename()
         
         # Process grid
         gridLoader = GridLoader.GridLoader(self.localValues["width"], self.localValues["height"],
                                            self.localValues["inFilename"])
-        (success, strValue, bgaArray) = gridLoader.process()
+        (success, errorMessage, bgaArray, sourceImage) = gridLoader.process()
 
-        # Stop appearing busy        
-        wx.EndBusyCursor()
-
-        self.getButtonBrowse().Enable(True)
-        self.getButtonCompute().Enable(True)
-
+        self.localValues["isComputationValid"] = success
+        
         # Display results
         if not success:
-            page = "<html><body><h1>Error: '%s' !</h1></body></html>" % strValue
+            self._displayResults(success, errorMessage)
         else:
-            # Generate BGA and output in the correct format
-            self.localValues["table"] = self._outputGrid(bgaArray)
-            self.localValues["outFilename"] = wx.FileSystem.FileNameToURL(strValue)
-            page = """
-            <html><body>
-            <h1>Results</h1>
-            <p><u>Table of contents</u></p>
-            <ul>
-            <li><a href="#input">Input image preview</a></li>
-            <li><a href="#detected">Pads detected</a></li>
-            <li><a href="#table">Table representation of output</a></li>
-            </ul>
-            <a name="input"></a>
-            <h2>Input image:</h2>
-            <p><img src="%(inFilename)s"></p>
-            <a name="detected"></a>            
-            <h2>Pads detected overlay (red dots):</h2>
-            <p><img src="%(outFilename)s"></p>
-            <a name="table">
-            <h2>Table representation of output footprint (from top):</h2>
-            <p>%(table)s</p>
-            </body></html>""" % self.localValues
+            # Store data derived from processing
+            self.localValues["sourceImage"] = sourceImage
+            self.localValues["bgaArray"] = bgaArray
+            self.localValues["outFilename"] = get_temp_filename()
+            self.localValues["outFilenameURL"] = wx.FileSystem.FileNameToURL(self.localValues["outFilename"])
+
+            # Regenerate processed grid with all names and correct flipping
+            self.localValues["resultList"] = self._getProcessedGrid(self.localValues["bgaArray"])
             
-        self.getHtmlReport().SetPage(page)
+            # Generate "detected balls" image
+            draw_bins(self.localValues["outFilename"], sourceImage, self.localValues["width"], self.localValues["height"], self.localValues["bgaArray"])
+            
+            # Draw HTML table of grid
+            self.localValues["table"] = self._outputGridHTML()
+            
+            # Display all results       
+            self._displayResults(success, "")
+            
         self.getHtmlReport().Scroll(0, 0)
+
         # Show results page
         self.getNotebook().ChangeSelection(1)
-
+        
+        self._stopBusy()
+        
     def onBrowse(self, event):
         """
         Event handler for the "Browse" button.
@@ -567,6 +668,66 @@ class MainPanel(wx.Panel):
             self.getTextCtrlFilename().SetValue(filename)
 
         fileDialog.Destroy()
+        
+    def onImageClicked(self, point, cellSize):
+        """
+        Event handler for a pseudo-event generated by ImageHandlingHtmlWindow.
+        
+        This event handler toggles a ball position based on clicks in the results image.
+        The "point" parameter is the image coordinate that was clicked. The "cellSize"
+        is a (width, height) tuple of the HtmlCell within which the click occured. The
+        "cellSize" parameter is used to determine whether the click actually occured in
+        the desired image, by matching with the expected image size.
+        """
+        cellWidth, cellHeight = cellSize
+        sx, sy = self.localValues["sourceImage"].size
+        px, py = point
+        
+        if sx == cellWidth and sy == cellHeight:
+            self._startBusy()
+            
+            # Toggle ball
+            xIdx, yIdx = point_to_idx(self.localValues["sourceImage"], px, py, self.localValues["width"], self.localValues["height"])
+            self.localValues["bgaArray"][yIdx, xIdx] = not self.localValues["bgaArray"][yIdx, xIdx]
+            prevScrollX, prevScrollY = self.getHtmlReport().GetViewStart()
+
+            # Regenerate processed grid with all names and correct flipping
+            self.localValues["resultList"] = self._getProcessedGrid(self.localValues["bgaArray"])
+            
+            # Regenerate "detected balls" image
+            draw_bins(self.localValues["outFilename"], self.localValues["sourceImage"], self.localValues["width"], self.localValues["height"], self.localValues["bgaArray"])
+            
+            # Redraw HTML table of grid
+            self.localValues["table"] = self._outputGridHTML()
+            
+            # Display results graph           
+            self._displayResults(True, "")
+    
+            # Refresh report
+            self.getHtmlReport().Scroll(prevScrollX, prevScrollY)
+            self.getHtmlReport().Refresh()
+            self.getHtmlReport().Update()
+
+            self._stopBusy()
+
+    def _startBusy(self):
+        # Start appearing busy
+        self.getButtonBrowse().Enable(False)
+        self.getButtonCompute().Enable(False)
+        self.getButtonExportToFile().Enable(False)
+        self.getButtonExportToClipboard().Enable(False)
+        wx.BeginBusyCursor()
+
+    def _stopBusy(self):
+        # Stop appearing busy        
+        wx.EndBusyCursor()
+     
+        # Set button enables according to values
+        self.getButtonBrowse().Enable(True)
+        self.getButtonCompute().Enable(True)
+
+        self.getButtonExportToClipboard().Enable(self.localValues["isComputationValid"])
+        self.getButtonExportToFile().Enable(self.localValues["isComputationValid"])
     
 class MainFrame(wx.Frame):
     def __init__(self, parent, id, title,
