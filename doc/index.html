@@ -51,7 +51,9 @@
 			are available in a table on the same page(not shown), and the number of ball
 			is 44 horizontally (width) and vertically (height).</li>
 			<li>Enter the <b>location of pin A1</b> from the top view. Here, it would be
-			"NW" for "North West".</li>
+			"NW" for "North West". This is the datasheet orientation, not the <strong>
+			desired</strong> final orientation. AutoBGA always generates CAD data to have
+			the A1 pin in the Northwest corner after export.</li>
 			<li>Extract the <b>region displaying the balls</b>. Most times it will be
 			shown on the bottom view, but sometimes they will appear through
 			transparency on the top view instead. The next section discusses image
@@ -110,12 +112,22 @@
 			
 			<li><b>Pads detected overlay</b>: An image showing a red dot in every cell where
 			a ball was detected in the input image. A grid of blue lines is also present
-			to show which cells were used to detect the balls.</li>
+			to show which cells were used to detect the balls. <strong>It is possible to
+			click in the cells to toggle the detected ball state.</strong> This feature
+			helps in fixing the package when the detection algorithm got
+			fooled for some reason. It is very rarely necessary. When user modifications
+			are applied, the data is regenerated immediately. It is not necessary to
+			click "Compute" again before exporting. </li>
 			
 			<li><b>Table representation of output footprint</b>: A table that shows the final
 			ball grid that was output. This takes in account mirroring ("Picture view")
 			and pin A1 location. Cells with balls have a cyan background. Empty cells
-			have a white background. Pin A1 is marked by a red background.</li>
+			have a white background. Pin A1 is marked by a red background.
+			<strong>Note that all outputs rotate the part so that pin A1 is in the
+			upper-left (Northwest) corner. This is to respect standard part orientations
+			for pick-and-place machines.</strong> The table representation does NOT have
+			this rotation applied. It can be used to compare with the datasheet in terms
+			of pad names.</li>
 		</ol></p>
 		
 		<h2>Output formats</h2>
@@ -157,9 +169,10 @@
 		<a name="eagle-format"></a>
 		<h3>EAGLE SCR Format</h3>
 		<p>The EAGLE SCR format contains EAGLE commands to draw all the pads
-		detected in the EAGLE library editor. Simply create a new "package" in
-		the library editor and then run the script with the "SCR" EAGLE command. 
-		The script must be pasted in a text editor and saved before being used. 
+		detected in the EAGLE library editor. A device outline will also be
+		drawn on the silkscreen, with pin A1 dot and corner line. 
+		Simply create a new "package" in the library editor and then run the 
+		script with the "SCR" EAGLE command.
 		</p>
 
 		<a name="problems"></a>
