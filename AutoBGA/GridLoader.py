@@ -53,6 +53,7 @@ from numpy import array,zeros,dtype,sum,reshape,histogram,max,nonzero
 from numpy import nonzero,logical_and,arange,round,mean,asarray, isnan
 import math
 import warnings
+from GridUtils import *
 
 class GridLoader:
     def __init__(self, nx, ny, filename):
@@ -96,40 +97,30 @@ class GridLoader:
         return (xSpread, ySpread, contents)
         #print "xSpread=%d, ySpread=%d, contents=%d" % (xSpread, ySpread, contents)
 
-    def getBinBounds(self, xIdx, yIdx):
-        sx, sy = self.image.size
-
-        # Get x range for bin
-        xmin = int(math.floor((float(xIdx) * sx) / self.nx))
-        xmax = int(math.floor((float(xIdx + 1) * sx) / self.nx)) - 1
-        if xmax >= sx: xmax = (sx - 1)
-
-        # Get y range for bin
-        ymin = int(math.floor((float(yIdx) * sy) / self.ny))
-        ymax = int(math.floor((float(yIdx + 1) * sy) / self.ny)) - 1
-        if ymax >= sy: ymax = (sy - 1)
-
-        return (xmin, ymin, xmax, ymax)
-
     def eliminateCross(self, binData):
         """
         Blank-out horizontal and vertical crosslines by
-        detecting rows or columns with more than 70% of their
-        pixels lit and clearing them.
+        detecting rows or columns with more than 80% of their
+        pixels lit and clearing them. When the dimension being
+        checked has more than 20 pixels, turn the threshold down to
+        50%.
         
         Returns: a new clean bin data array
         """
         height, width = binData.shape
         
+        hThreshold = height >= 20 and 0.5 or 0.8
+        wThreshold = width >= 20 and 0.5 or 0.8
+        
         newBinData = binData.copy()
         binaryBin = newBinData > 127
         
         for vLineIdx in range(width):
-            if sum(binaryBin[:,vLineIdx]) > (float(height) * 0.8):
+            if sum(binaryBin[:,vLineIdx]) > (float(height) * hThreshold):
                 newBinData[:,vLineIdx] = 0
 
         for hLineIdx in range(height):
-            if sum(binaryBin[hLineIdx,:]) > (float(width) * 0.8):
+            if sum(binaryBin[hLineIdx,:]) > (float(width) * wThreshold):
                 newBinData[hLineIdx,:] = 0
                 
         return newBinData
@@ -150,7 +141,7 @@ class GridLoader:
         for xIdx in range(self.nx):
             for yIdx in range(self.ny):
                 # Extract bin from image
-                xmin, ymin, xmax, ymax = self.getBinBounds(xIdx, yIdx)                
+                xmin, ymin, xmax, ymax = get_bin_bounds(self.image, self.nx, self.ny, xIdx, yIdx)                
                 binData = asarray(self.image.crop((xmin, ymin, xmax+1, ymax+1)))
 
                 # Calculate spread and contents (number of black pixels)
@@ -284,57 +275,15 @@ class GridLoader:
         
         # Binarize bins array according to threshold
         self.bgaArray = self.contents >= threshold
-        
-    def drawBins(self):
-        """
-        Draw an image containing the bins and detected ball positions, for
-        user verification.
-        """
-        # Get a new drawing context
-        newImage = self.image.copy()
-        newImage = ImageChops.invert(newImage).convert("RGB")
-        gc = ImageDraw.Draw(newImage)
-        sx, sy = newImage.size
-        
-        # Draw a circle in every detected pad bin
-        for py in range(self.ny):
-            for px in range(self.nx):
-                xmin, ymin, xmax, ymax = self.getBinBounds(px, py)
-                gc.line([(0,ymax),(sx,ymax)], fill = "blue")
-                gc.line([(xmax,0),(xmax,sy)], fill = "blue")
                 
-                width = (xmax - xmin) + 1
-                height = (ymax - ymin) + 1
-                
-                xmin2 = xmin + round(float(width) * 0.4)
-                xmax2 = xmin + round(float(width) * 0.6)
-                ymin2 = ymin + round(float(height) * 0.4)
-                ymax2 = ymin + round(float(height) * 0.6)
-                
-                if self.bgaArray[py,px]:
-                    gc.ellipse((xmin2, ymin2, xmax2, ymax2), outline = "red", fill = "red")
-        del gc
-        
-        # Disable pesky warnings about os.tempnam()
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-
-            # Save the bins image in a temporary file
-            filename = os.tempnam("autobga","tmpoutimg") + ".png"
-            try:
-                newImage.save(filename)
-            except IOError:
-                return None    
-        
-        return filename
-        
     def process(self):
         # Try to open image and convert it to black and white
         try:
             self.image = ImageChops.invert(Image.open(self.filename).convert("L"))
-            #self.image.save("testroboto.png")
         except IOError(e):
-            return (False, str(e), None)
+            return (False, str(e), None, None)
+        
+        sx, sy = self.image.size
         
         # Extract bins to internal data structures
         self.extractBins()
@@ -342,9 +291,7 @@ class GridLoader:
         # Extract BGA array geometry from bins
         self.extractArrayFromBins()
         
-        tempFilename = self.drawBins()
-        
-        return (True, tempFilename, self.bgaArray.copy())
+        return (True, "", self.bgaArray.copy(), self.image)
 
                 #print "Bin (%d, %d): (%d %d)-(%d %d), w=%d, h=%d, n=%d" % (xIdx, yIdx, xmin, ymin, xmax, ymax, width, height, (width * height))
                 #if xIdx == yIdx == 0:

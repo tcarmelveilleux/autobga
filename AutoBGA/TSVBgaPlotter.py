@@ -1,21 +1,17 @@
-#!/bin/env python
-# -*- coding: cp1252 -*-
 """
-Simple HtmlWindow that redirects all web links (http://)
-to a new browser instance.
+TSV (tab-separated values) format BGA plotter
 
-Created on: 7/09/2010
+Created on: Feb 19, 2011
 Author: Tennessee Carmel-Veilleux (tcv -at- ro.boto.ca)
 Revision: $Rev$
 
-Copyright 2010 Tennessee Carmel-Veilleux
+Copyright 2011 Tennessee Carmel-Veilleux
 
 Description: 
-Simple HtmlWindow that redirects all web links (http://)
-to a new browser instance.
+TSV (tab-separated values) format BGA plotter
 
 License:
-Copyright (c) 2010, Tennessee Carmel-Veilleux
+Copyright (c) 2011, Tennessee Carmel-Veilleux
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without 
@@ -44,15 +40,38 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-import wx.html as html
-import webbrowser
+from BgaPlotter import *
 
-class ExternalBrowserHtmlWindow(html.HtmlWindow):
-    def __init__(self, parent, id, pos, size, style):
-        html.HtmlWindow.__init__(self, parent, id, pos, size, style)
+class TSVBgaPlotter(BgaPlotter):
+    def __init__(self, ballList, localValues):
+        """
+        TSV BGA Plotter implementation.
+        
+        Simply output a list of pads present with their pad name,
+        position and diameter.
+        
+        No silkscreen item or courtyard are included.
+        """
+        BgaPlotter.__init__(self, ballList, localValues)
+        self.tsvList = []
+                
+    def draw_pad(self, name, centerPoint, diameter):
+        x, y = centerPoint
+        self.tsvList.append("%s\t%.3f\t%.3f\t%.3f" % (name, x, y, diameter))
     
-    def OnLinkClicked(self, link):
-        if link.GetHref().startswith("http://"):
-            webbrowser.open_new_tab(link.GetHref())
-        else:
-            html.HtmlWindow.OnLinkClicked(self, link)
+    def draw_line(self, name, startPoint, endPoint, lineWidth, layer):
+        # Lines are omitted from TSV
+        pass
+    
+    def draw_circle(self, name, centerPoint, diameter, lineWidth, layer):
+        # Circles are omitted from TSV
+        pass
+            
+    def init_plotter(self):
+        # Write TSV file header
+        self.tsvList.append("Pad name\tX position (mm)\tY position (mm)\tPad diameter (mm)")
+    
+    def finish_plotter(self):        
+        # Output TSV file text
+        resultString = "\n".join(self.tsvList)        
+        return resultString
