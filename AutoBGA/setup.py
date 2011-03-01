@@ -63,9 +63,9 @@ GUI2Exe_Target_1 = Target(
     bitmap_resources = bitmap_resources,
     other_resources = other_resources,
     dest_base = "autobga",    
-    version = "1.0",
+    version = "1.2",
     company_name = "No Company",
-    copyright = "(C) Copyright 2010, Tennessee Carmel-Veilleux",
+    copyright = "(C) Copyright 2011, Tennessee Carmel-Veilleux",
     name = "autobga",
     
     )

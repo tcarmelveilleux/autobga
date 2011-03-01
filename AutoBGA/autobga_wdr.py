@@ -60,10 +60,12 @@ def MainDialog( parent, call_fit = True, set_sizer = True ):
 
     item0.Add( item6, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
 
-    item25 = wx.BoxSizer( wx.HORIZONTAL )
+    if set_sizer == True:
+        parent.SetSizer( item0 )
+        if call_fit == True:
+            item0.SetSizeHints( parent )
     
-    item26 = wx.StaticText( parent, ID_TEXT, u"Pin A1 location:", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item25.Add( item26, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+    return item0
 
 ID_HTML_REPORT = 10004
 
@@ -72,25 +74,41 @@ def ResultDialogFunc( parent, call_fit = True, set_sizer = True ):
     
     item1 = ImageHandlingHtmlWindow.ImageHandlingHtmlWindow(parent, ID_HTML_REPORT, wx.DefaultPosition, wx.Size(512,384), html.HW_SCROLLBAR_AUTO)
 
-    item28 = wx.StaticText( parent, ID_TEXT, u"Picture view:", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item25.Add( item28, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+    item0.Add( item1, 1, wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
 
-    item29 = wx.Choice( parent, ID_CHOICE_PICTURE_VIEW, wx.DefaultPosition, [90,-1], 
-        [u"Top",u"Bottom"] , 0 )
-    item25.Add( item29, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+    if set_sizer == True:
+        parent.SetSizer( item0 )
+        if call_fit == True:
+            item0.SetSizeHints( parent )
+    
+    return item0
 
 ID_HTML_HELP = 10005
 
-    item30 = wx.StaticText( parent, ID_TEXT, u"Output format:", wx.DefaultPosition, wx.DefaultSize, 0 )
-    item25.Add( item30, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+def HelpDialogFunc( parent, call_fit = True, set_sizer = True ):
+    item0 = wx.BoxSizer( wx.VERTICAL )
+    
+    item1 = ExternalBrowserHtmlWindow.ExternalBrowserHtmlWindow(parent, ID_HTML_HELP, wx.DefaultPosition, wx.Size(512,384), html.HW_SCROLLBAR_AUTO)
+    item0.Add( item1, 1, wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
 
-    item31 = wx.Choice( parent, ID_CHOICE_FORMAT, wx.DefaultPosition, [100,-1], 
-        [u"EAGLE SCR",u"TSV (Excel)",u"XML"] , 0 )
-    item25.Add( item31, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+    if set_sizer == True:
+        parent.SetSizer( item0 )
+        if call_fit == True:
+            item0.SetSizeHints( parent )
+    
+    return item0
 
 ID_HTML_ABOUT = 10006
 
+def AboutDialogFunc( parent, call_fit = True, set_sizer = True ):
+    item0 = wx.BoxSizer( wx.VERTICAL )
+    
+    item1 = ExternalBrowserHtmlWindow.ExternalBrowserHtmlWindow(parent, ID_HTML_ABOUT, wx.DefaultPosition, wx.Size(400,240), html.HW_SCROLLBAR_NEVER)
     item0.Add( item1, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+
+    item2 = wx.Button( parent, wx.ID_OK, u"OK", wx.DefaultPosition, wx.DefaultSize, 0 )
+    item2.SetDefault()
+    item0.Add( item2, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
 
     if set_sizer == True:
         parent.SetSizer( item0 )
